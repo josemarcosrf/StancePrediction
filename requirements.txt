@@ -1,0 +1,13 @@
+pandas==0.22.0
+scipy==1.0.0
+regex==2018.8.29
+tensorflow==1.10.0
+tqdm==4.28.1
+pytest==3.3.2
+numpy==1.13.0
+coloredlogs==10.0
+mosestokenizer==1.0.0
+sacremoses==0.0.19
+scikit_learn==0.21.2
+torch==1.1.0
+typing==3.6.6
