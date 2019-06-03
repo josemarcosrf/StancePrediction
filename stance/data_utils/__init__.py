@@ -1,52 +1,7 @@
-import csv
 import random
 import torch
-import numpy as np
-import pandas as pd
 
 from itertools import islice
-
-
-def load_from_csv(data_file):
-    """Reads from a CSV file and loads the dataset into a pandas dataframe
-
-    Returns:
-        pandas.dataframe: dataframe containing the Stance Dataset
-    """
-    data = []
-    with open(data_file, 'r',  encoding="iso-8859-1") as fin:
-        reader = csv.reader(fin, quotechar='"')
-        columns = next(reader)
-        for line in reader:
-            data.append(line)
-
-    data_df = pd.DataFrame(data, columns=columns)
-
-    print("Read a total of {} data points".format(len(data_df)))
-    data_df.head()
-
-    return data_df
-
-
-def load_from_txt(data_file):
-    """Reads from a TXT file and loads the dataset into a pandas dataframe
-
-    Args:
-        data_file ([type]): [description]
-    """
-    data = []
-    with open(data_file, 'r',  encoding="iso-8859-1") as fin:
-        reader = csv.reader(fin, delimiter='\t')
-        columns = next(reader)
-        for line in reader:
-            data.append(line)
-
-    data_df = pd.DataFrame(data, columns=columns)
-
-    print("Read a total of {} data points".format(len(data_df)))
-    data_df.head()
-
-    return data_df
 
 
 def chunk(iterable, c_size, stack_func=None):

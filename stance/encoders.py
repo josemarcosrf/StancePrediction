@@ -2,8 +2,11 @@ import logging
 import coloredlogs
 
 import regex as re
+import numpy as np
 
 from stance.data_utils.text_processing import tokenize
+# TODO: FIX the pyBPE path mess!
+from external.pyBPE.pybpe.pybpe import pyBPE as bpe
 
 logger = logging.getLogger(__name__)
 
@@ -11,6 +14,42 @@ logger = logging.getLogger(__name__)
 # configure the logger
 coloredlogs.install(logger=logger, level=logging.INFO,
                     format="%(filename)s:%(lineno)s - %(message)s")
+
+
+class OneHotLabelEncoder():
+
+    def __init__(self, x):
+        from sklearn.preprocessing import OneHotEncoder
+
+        if isinstance(x, list):
+            x = np.array(x).reshape(-1, 1)
+
+        self.encoder = OneHotEncoder(handle_unknown='ignore')
+        self.encoder.fit(x)
+
+    def encode(self, x):
+        return self.encoder.transform(x).todense()
+
+    def get_labels(self):
+        return self.encoder.categories_[0]
+
+
+class IndexEncoder():
+
+    def __init__(self, x):
+        from sklearn import preprocessing
+
+        if isinstance(x, list):
+            x = np.array(x).reshape(-1, 1)
+
+        self.encoder = preprocessing.LabelEncoder()
+        self.encoder.fit(x)
+
+    def encode(self, x):
+        return self.encoder.transform(x)
+
+    def get_labels(self):
+        return self.encoder.classes_
 
 
 class LaserEncoder():
@@ -23,24 +62,32 @@ class LaserEncoder():
 
     HANDLER_REGEX = r"@[\w\d_-]+"
 
-    def __init__(self, workdir, args,
-                 bpe_codes_file, vocab_file,
-                 lang='en', lower_case=False, descape=False):
+    def __init__(self, args, lang='en', lower_case=False, descape=False):
+        """Text corpus encoder using LASER: https://arxiv.org/abs/1812.10464
 
-        # FIX this mess of paths!
+        Args:
+            args ([type]): [description]
+            lang (str, optional): [description]. Defaults to 'en'.
+            lower_case (bool, optional): [description]. Defaults to False.
+            descape (bool, optional): [description]. Defaults to False.
+        """
+
+        # TODO: Currently the external Laser lib. requires an args object.
+        #       Change for explicit parameters!
         from external.encoders.laser import EncodeLoad
-        from external.pyBPE.pybpe.pybpe import pyBPE as bpe
+
+        # configure path from 'args'
+        self.workdir = args.workdir
+        self.bpe_codes_file = args.bpe_codes
+        self.vocab_file = args.vocab_file
 
         # load the LASER sentence encoder
         self.encoder = EncodeLoad(args)
-        self.bpe_codes_file = bpe_codes_file
-        self.vocab_file = vocab_file
 
-        # configuration
+        # tokenization configuration
         self.lang = lang
         self.lower_case = lower_case
         self.descape = descape
-        self.workdir = workdir
 
     def encode(self, corpus):
         """Encodes a given corpus using LASER encoding.

@@ -49,10 +49,14 @@ can be found [here](http://www.saifmohammad.com/WebPages/StanceDataset.htm)
 
 
 ### Training:
+
+1. Traing a classifier [LASER](https://github.com/facebookresearch/LASER)-encoding
+the tweets and OneHot encoding the Stance:
 ```bash
-    python run.py \
+    python -m stance.laser_classifier  \
         --train-file data/SemEval2016-Task6-subtaskA-traindata-gold.csv \
-        --test-file data/SemEval2016-Task6-subtaskA-testdata-gold.txt
+        --test-file data/SemEval2016-Task6-subtaskA-testdata-gold.txt \
+        --debug
 ```
 
 ### Eval:
