@@ -18,18 +18,17 @@ def encode_tweets_and_targets(args, tweets, targets):
     """ Applies text preprocesing and LASER encodes the
     tweet entries. Applies OneHot encoding to the targets """
     try:
-
+        delim = " || "
         encoder = LaserEncoder(args)
         # encode Tweet data
-        encoded_tweets = encoder.encode(tweets)
-        logger.info("Tweets encoded: {}".format(encoded_tweets.shape))
+        encoded_tweets_targets = encoder.encode([
+            tw + delim + tg
+            for tw, tg in zip(tweets, targets)
+        ])
+        logger.info("Tweets+Targets encoded: {}"
+                    "".format(encoded_tweets_targets.shape))
 
-        # Encode targets as OneHot vectors
-        target_encoder = OneHotLabelEncoder(targets)
-        encoded_targets = target_encoder.encode(targets)
-
-        # Concatenate encoded tweets and encoded targets
-        return np.concatenate((encoded_tweets, encoded_targets), axis=1)
+        return encoded_tweets_targets
 
     except Exception as e:
         logger.error("Error while preparing inputs!")
@@ -86,15 +85,12 @@ def encode_or_load_data(args, data_loader):
     """
     # ** Inputs **
     encoded_train_inputs_path = os.path.join(
-        args.workdir, "laser_training_inputs.npy")
+        args.workdir, "training_laser-tweet+target.npy")
     encoded_test_inputs_path = os.path.join(
-        args.workdir, "laser_test_inputs.npy")
+        args.workdir, "test_laser-tweet+target.npy")
 
     if not os.path.exists(encoded_train_inputs_path) or \
             not os.path.exists(encoded_test_inputs_path):
-
-        # load in data
-        data_loader = StanceDataLoader(args.train_file, args.test_file)
 
         # Transform and save if not present
         if not os.path.exists(encoded_train_inputs_path):
@@ -157,7 +153,7 @@ def make_classifier_and_predict(train_set, test_set,
 
     elif clf_name == "mlp":
         from sklearn.neural_network import MLPClassifier
-        clf = MLPClassifier(hidden_layer_sizes=(1029, 512, 128),
+        clf = MLPClassifier(hidden_layer_sizes=(1024, 512),
                             activation='relu',
                             early_stopping=True,
                             random_state=random_seed)
