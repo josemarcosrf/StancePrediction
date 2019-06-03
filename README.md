@@ -7,6 +7,18 @@ We use [The SemEval-2016 Stance Dataset](http://www.saifmohammad.com/WebDocs/sta
 An interactive visualization and further information about the dataset
 can be found [here](http://www.saifmohammad.com/WebPages/StanceDataset.htm)
 
+This repo explores a transfer-learning approach to Stance detection:
+
+Uses a concatenation of the `tweets` encoded with
+[LASER](https://github.com/facebookresearch/LASER) and one-hot encoded
+ `targets` as inputs to different classifiers (`mlp`, `svm` or `random forest`).
+
+No `fine-tunning`, `data-augmentation`, `hyper-parameter search` or
+any other optimization technique is used.
+
+This open the door to a variaty of tricks that could be applied to improve
+results. Nevertheless we can see competitives results.
+
 
 ## Structure
 
@@ -19,19 +31,21 @@ can be found [here](http://www.saifmohammad.com/WebPages/StanceDataset.htm)
     │   ├── SemEval2016-Task6-subtaskA-testdata-gold.txt
     │   ├── SemEval2016-Task6-subtaskA-traindata-gold.csv
     │   └── stance.csv
-    ├── external
+    ├── external        # external libraries, models, ...
     │   ├── encoders
     │   ├── models
     │   ├── pyBPE
     │   └── workdir
     ├── README.md
-    ├── run.py
+    ├── requirements.txt    # python requirements
     ├── scripts
     │   ├── explore_dataset.ipynb
     │   └── stance-detection-data-processing.html
-    ├── stance
-    │   ├── classifiers
+    ├── setup.cfg
+    ├── stance              # Stance Prediction package
     │   ├── data_utils
+    │   ├── encoders.py
+    │   ├── laser_classifier.py
     │   └── training
     └── tests
 
@@ -43,9 +57,7 @@ can be found [here](http://www.saifmohammad.com/WebPages/StanceDataset.htm)
 
 ### Prepare:
 
-1. clone [pyBPE](https://github.com/jmrf/pyBPE) into `./external`
-
-2. [...]
+1. `./scripts/download_models.sh`
 
 
 ### Training:

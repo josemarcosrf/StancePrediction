@@ -86,15 +86,12 @@ def encode_or_load_data(args, data_loader):
     """
     # ** Inputs **
     encoded_train_inputs_path = os.path.join(
-        args.workdir, "laser_training_inputs.npy")
+        args.workdir, "training_laser-tweet+onehot-target.npy")
     encoded_test_inputs_path = os.path.join(
-        args.workdir, "laser_test_inputs.npy")
+        args.workdir, "test_laser-tweet+onehot-target.npy")
 
     if not os.path.exists(encoded_train_inputs_path) or \
             not os.path.exists(encoded_test_inputs_path):
-
-        # load in data
-        data_loader = StanceDataLoader(args.train_file, args.test_file)
 
         # Transform and save if not present
         if not os.path.exists(encoded_train_inputs_path):
