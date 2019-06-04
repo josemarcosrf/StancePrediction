@@ -112,14 +112,11 @@ class LaserEncoder():
         # Remove twitter handlers
         input_text = re.sub(self.HANDLER_REGEX,
                             "TWEETER_HANDLER", input_text)
-
         # Tokenize the input
         tokenized = tokenize(input_text, lang=self.lang,
                              descape=False, lower_case=False)
-
         # BPE encode
         encoded = bpe.apply_bpe(tokenized,
                                 self.bpe_codes_file,
                                 self.vocab_file)
-
         return encoded
