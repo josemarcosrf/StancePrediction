@@ -65,7 +65,7 @@ results. Nevertheless we can see competitives results.
 1. Traing a classifier [LASER](https://github.com/facebookresearch/LASER)-encoding
 the tweets and OneHot encoding the Stance:
 ```bash
-    python -m stance.laser_classifier  \
+    python -m stance.laser_classifier  train \
         --train-file data/SemEval2016-Task6-subtaskA-traindata-gold.csv \
         --test-file data/SemEval2016-Task6-subtaskA-testdata-gold.txt \
         --debug
@@ -92,11 +92,40 @@ This should output something similar to:
     Timeit - 'make_classifier_and_predict' took 23.9830 seconds
 ```
 
+Once the encoding and training finishes produces a `predictions.csv` file
+than can be passed onto a `perl` script provided by
+```bash
+    perl ./scripts/eval.pl \
+        ./data/SemEval2016-Task6-subtaskA-testdata-gold.txt \
+        ./workdir/predictions.csv
+```
+
+Which shoudl output a similar summary as at training time but only for
+stances `FAVOR` and `AGAINST`:
+
+```bash
+============
+Results
+============
+FAVOR     precision: 0.5800 recall: 0.4770 f-score: 0.5235
+AGAINST   precision: 0.7206 recall: 0.7790 f-score: 0.7487
+------------
+Macro F: 0.6361
+```
+
 ### Eval:
 ```bash
-    python run.py eval \
-        --eval-file data/stance.csv
-        --ckpt-file ...
+    python -m stance.laser_classifier  eval \
+        --train-file data/SemEval2016-Task6-subtaskA-traindata-gold.csv \
+        --test-file data/SemEval2016-Task6-subtaskA-testdata-gold.txt \
+        --debug
+```
+
+### Evaluation on a different domain:
+```bash
+    python -m stance.laser_classifier  transfer \
+        --test-file data/stance.csv \
+        --debug
 ```
 
 

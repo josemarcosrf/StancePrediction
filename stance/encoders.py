@@ -28,6 +28,8 @@ class OneHotLabelEncoder():
         self.encoder.fit(x)
 
     def encode(self, x):
+        if isinstance(x, list):
+            x = np.array(x).reshape(-1, 1)
         return self.encoder.transform(x).todense()
 
     def get_labels(self):
@@ -46,6 +48,8 @@ class IndexEncoder():
         self.encoder.fit(x)
 
     def encode(self, x):
+        if isinstance(x, list):
+            x = np.array(x).reshape(-1, 1)
         return self.encoder.transform(x)
 
     def get_labels(self):

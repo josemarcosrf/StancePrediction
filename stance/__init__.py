@@ -1,6 +1,10 @@
 import time
 import argparse
 
+STANCES = ['AGAINST', 'FAVOR', 'NONE']
+TARGETS = ['Atheism', 'Climate Change is a Real Concern', 'Feminist Movement',
+           'Hillary Clinton', 'Legalization of Abortion']
+
 
 def timeit(method):
     def timed(*args, **kw):
@@ -15,15 +19,17 @@ def timeit(method):
 def build_arg_parser():
     parser = argparse.ArgumentParser('StancePrediction task')
 
+    parser.add_argument('task', type=str, default='train',
+                        help="one of {train, eval, transfer}")
     parser.add_argument('--rseed', type=int, default=123,
                         help="Random seed ")
 
     input_group = parser.add_argument_group('Input Data Options')
-    input_group.add_argument('--train-file', required=True,
+    input_group.add_argument('--train-file', required=False,
                              help='CSV training input file')
-    input_group.add_argument('--test-file', required=True,
+    input_group.add_argument('--test-file', required=False,
                              help='CSV test input file')
-    input_group.add_argument('--workdir', default="external/workdir",
+    input_group.add_argument('--workdir', default="./workdir",
                              help='temporary work directory')
 
     # verbosity options

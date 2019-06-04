@@ -27,7 +27,7 @@ def load_from_csv(data_file):
 
     data_df = pd.DataFrame(data, columns=columns)
 
-    print("Read a total of {} data points".format(len(data_df)))
+    logger.info("Read a total of {} data points".format(len(data_df)))
     data_df.head()
 
     return data_df
@@ -48,40 +48,46 @@ def load_from_txt(data_file):
 
     data_df = pd.DataFrame(data, columns=columns)
 
-    print("Read a total of {} data points".format(len(data_df)))
+    logger.info("Read a total of {} data points".format(len(data_df)))
     data_df.head()
 
     return data_df
 
 
-class StanceDataLoader():
+class SemEvalDataLoader():
 
     VALID_KEYS = {'Tweet', 'Target', 'Stance'}
-    VALID_SETS = {'train', 'test'}
+    VALID_SETS = set()
 
-    def __init__(self, train_file, test_file):
+    def __init__(self, train_file=None, test_file=None):
         self.train_file = train_file
         self.test_file = test_file
+        self.train_df = None
+        self.test_df = None
         self._load_dataset()
 
     def _load_dataset(self):
         """ Loads train and test dataset from CSV files """
         try:
             # Trainig data
-            logger.info(
-                "Loading training data from: {}".format(self.train_file))
-            self.train_df = load_from_csv(self.train_file)
-            logger.info("Train targets count:\n{}".format(
-                self.train_df['Target'].value_counts())
-            )
+            if self.train_file is not None:
+                logger.info(
+                    "Loading training data from: {}".format(self.train_file))
+                self.train_df = load_from_csv(self.train_file)
+                logger.info("Train targets count:\n{}".format(
+                    self.train_df['Target'].value_counts())
+                )
+                self.VALID_SETS.add('train')
 
             # Test data
-            logger.info(
-                "Loading testing data from: {}".format(self.test_file))
-            self.test_df = load_from_txt(self.test_file)
-            logger.info("Test targets count:\n{}".format(
-                self.test_df['Target'].value_counts())
-            )
+            if self.test_file is not None:
+                logger.info(
+                    "Loading testing data from: {}".format(self.test_file))
+                self.test_df = load_from_txt(self.test_file)
+                logger.info("Test targets count:\n{}".format(
+                    self.test_df['Target'].value_counts())
+                )
+                self.VALID_SETS.add('test')
         except Exception as e:
             logger.error("Error while reading Stance dataset!")
             logger.exception(e)
@@ -98,5 +104,40 @@ class StanceDataLoader():
         if set == 'train':
             return self.train_df[key].tolist()
 
-        return self.test_df[key].tolist()
+        if set == 'test':
+            return self.test_df[key].tolist()
 
+        return []
+
+
+class StanceDataLoader():
+
+    VALID_KEYS = {'text', 'controversial trending issue'}
+    TARGET_MAPPING = {
+        'abortion': 'Legalization of Abortion',
+        'climate': 'Climate Change is a Real Concern',
+        'feminism': 'Feminist Movement',
+        'hillary': 'Hillary Clinton'
+    }
+
+    def __init__(self, data_file):
+        try:
+            self.df = load_from_csv(data_file)
+            self._map_targets()
+        except Exception as e:
+            logger.error("Error while trying to read stance dataset file")
+            logger.exception(e)
+
+    def _map_targets(self):
+
+        # Map targets to preserve Target-Encoding order
+        k = 'controversial trending issue'
+        for i, target in enumerate(self.df[k]):
+            self.df.iloc[i][k] = self.TARGET_MAPPING.get(target, target)
+
+    def get(self, key):
+        if key not in self.VALID_KEYS:
+            raise ValueError("{} is not a valid dataset field. "
+                             "Valid fields: {}".format(key, self.VALID_KEYS))
+
+        return self.df[key].tolist()

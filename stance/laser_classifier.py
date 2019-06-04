@@ -4,8 +4,9 @@ import logging
 
 import numpy as np
 
+from stance import STANCES, TARGETS
 from stance import (timeit, build_arg_parser)
-from stance.data_utils.loaders import StanceDataLoader
+from stance.data_utils.loaders import SemEvalDataLoader
 from stance.encoders import (LaserEncoder,
                              OneHotLabelEncoder,
                              IndexEncoder)
@@ -19,14 +20,15 @@ def encode_tweets_and_targets(args, tweets, targets):
     tweet entries. Applies OneHot encoding to the targets """
     try:
 
-        encoder = LaserEncoder(args)
+        # Encode targets as OneHot vectors
+        target_encoder = OneHotLabelEncoder(TARGETS)
+        encoded_targets = target_encoder.encode(targets)
+        logger.debug("Targets found: {}".format(target_encoder.get_labels()))
+
         # encode Tweet data
+        encoder = LaserEncoder(args)
         encoded_tweets = encoder.encode(tweets)
         logger.info("Tweets encoded: {}".format(encoded_tweets.shape))
-
-        # Encode targets as OneHot vectors
-        target_encoder = OneHotLabelEncoder(targets)
-        encoded_targets = target_encoder.encode(targets)
 
         # Concatenate encoded tweets and encoded targets
         return np.concatenate((encoded_tweets, encoded_targets), axis=1)
@@ -45,7 +47,7 @@ def encode_outputs(stances):
     Returns:
         tuple(list, list): list of numeric encoded stances and seen clas labels
     """
-    encoder = IndexEncoder(stances)
+    encoder = IndexEncoder(STANCES)
     return encoder.encode(stances), encoder.get_labels()
 
 
@@ -95,21 +97,29 @@ def encode_or_load_data(args, data_loader):
 
         # Transform and save if not present
         if not os.path.exists(encoded_train_inputs_path):
-            # Preprocess and encode the inputs (Tweets + Targets)
-            encoded_training_inputs = encode_tweets_and_targets(
-                args,
-                data_loader.get('Tweet', set='train'),
-                data_loader.get('Target', set='train')
-            )
-            np.save(encoded_train_inputs_path, encoded_training_inputs)
+            try:
+                # Preprocess and encode the inputs (Tweets + Targets)
+                encoded_training_inputs = encode_tweets_and_targets(
+                    args,
+                    data_loader.get('Tweet', set='train'),
+                    data_loader.get('Target', set='train')
+                )
+                np.save(encoded_train_inputs_path, encoded_training_inputs)
+            except Exception as e:
+                logger.error("Error while encoding train dataset")
+                logger.exception(e)
 
         if not os.path.exists(encoded_test_inputs_path):
-            encoded_test_inputs = encode_tweets_and_targets(
-                args,
-                data_loader.get('Tweet', set='test'),
-                data_loader.get('Target', set='test')
-            )
-            np.save(encoded_test_inputs_path, encoded_test_inputs)
+            try:
+                encoded_test_inputs = encode_tweets_and_targets(
+                    args,
+                    data_loader.get('Tweet', set='test'),
+                    data_loader.get('Target', set='test')
+                )
+                np.save(encoded_test_inputs_path, encoded_test_inputs)
+            except Exception as e:
+                logger.error("Error while encoding test dataset")
+                logger.exception(e)
 
     else:
         encoded_training_inputs, encoded_test_inputs = \
@@ -125,12 +135,56 @@ def encode_or_load_data(args, data_loader):
             lbls)
 
 
-@timeit
-def make_classifier_and_predict(train_set, test_set,
-                                target_names, random_seed,
-                                clf_name="randomforest"):
+def save_model(args, clf):
+    from sklearn.externals import joblib
+
+    save_path = os.path.join(
+        args.workdir, "{}_{}.pkl".format(args.clf_save_name, args.clf_type))
+    joblib.dump(clf, save_path)
+
+
+def load_model(args):
+    from sklearn.externals import joblib
+
+    save_path = os.path.join(
+        args.workdir, "{}_{}.pkl".format(args.clf_save_name, args.clf_type))
+    return joblib.load(save_path)
+
+
+def save_predictions(args, y_pred):
+    from stance.data_utils.loaders import load_from_txt
+    import copy
+
+    gold = load_from_txt(args.test_file)[['Target', 'Tweet', 'Stance']]
+    pred = copy.deepcopy(gold)
+
+    for i, y in enumerate(y_pred):
+        y_lbl = ['AGAINST', 'FAVOR', 'NONE'][y]
+        pred.iloc[i]['Stance'] = y_lbl
+
+    pred.to_csv(os.path.join(args.workdir, "predictions.csv"),
+                sep='\t', index=True, index_label='ID')
+
+
+def eval_model(args, clf, x_test, y_test):
     from sklearn.metrics import classification_report
 
+    y_pred = clf.predict(x_test)
+    logger.debug("Predictions: {}".format(y_pred.shape))
+
+    # Calculate score and clasificatin report
+    score = clf.score(x_test, y_test)
+    logger.info("Test score: {}".format(score))
+    print(classification_report(y_test, y_pred, target_names=target_names))
+
+    # Save predictions as csv
+    save_predictions(args, y_pred)
+
+
+@timeit
+def make_classifier_and_predict(args, train_set, test_set,
+                                target_names, random_seed,
+                                clf_name="randomforest"):
     # Data
     x_train, y_train = train_set
     x_test, y_test = test_set
@@ -159,17 +213,33 @@ def make_classifier_and_predict(train_set, test_set,
                             early_stopping=True,
                             random_state=random_seed)
 
-    # Train the classifier and predict
+    # Train the classifier & save
     clf.fit(x_train, y_train)
-    y_pred = clf.predict(x_test)
-    logger.debug("Predictions: {}".format(y_pred.shape))
-
-    # Calculate score and clasificatin report
-    score = clf.score(x_test, y_test)
-    logger.info("Test score: {}".format(score))
-    print(classification_report(y_test, y_pred, target_names=target_names))
-
+    save_model(args, clf)
+    eval_model(args, clf, x_test, y_test)
     return clf
+
+
+@timeit
+def encode_or_load_stance(args, data_loader):
+
+    encoded_stance_input_file = "./workdir/stance_laser-text+onehot-target.npy"
+
+    if not os.path.exists(encoded_stance_input_file):
+        try:
+            encoded_inputs = encode_tweets_and_targets(
+                args,
+                [t.replace("\n", "  ") for t in data_loader.get('text')],
+                data_loader.get('controversial trending issue')
+            )
+            np.save(encoded_stance_input_file, encoded_inputs)
+        except Exception as e:
+            logger.error("Error while encoding stance inputs...")
+            logger.exception(e)
+    else:
+        encoded_inputs = np.load(encoded_stance_input_file)
+
+    return encoded_inputs
 
 
 def get_args():
@@ -200,6 +270,8 @@ def get_args():
 
     # Add classifier options
     classifier_group = parser.add_argument_group('Classifier options')
+    classifier_group.add_argument('--clf-save-name', default='laser',
+                                  help="Name to save the classifier")
     classifier_group.add_argument('--clf-type', default='mlp',
                                   help=('Classifer type to use: '
                                         '{mlp, randomforest, svc}'))
@@ -219,15 +291,45 @@ if __name__ == '__main__':
         logger=logger
     )
 
-    # Load dataset
-    data_loader = StanceDataLoader(args.train_file, args.test_file)
+    if args.task in {'train', 'eval'}:
+        # Load dataset
+        data_loader = SemEvalDataLoader(args.train_file, args.test_file)
+        # Create preprocessor
+        train_set, test_set, target_names = encode_or_load_data(args, data_loader)
 
-    # Create preprocessor
-    train_set, test_set, target_names = encode_or_load_data(args, data_loader)
+    # Train a classifier and evaluate on the test set
+    if args.task == 'train':
+        clf = make_classifier_and_predict(args,
+                                          train_set, test_set,
+                                          target_names,
+                                          args.rseed,
+                                          args.clf_type)
 
-    # Train a classifier on top
-    clf = make_classifier_and_predict(train_set,
-                                      test_set,
-                                      target_names,
-                                      args.rseed,
-                                      args.clf_type)
+    # Load a trained clasifier and evaluate on the test set
+    elif args.task == 'eval':
+        clf = load_model(args)
+        x_test, y_test = test_set
+        eval_model(args, clf, x_test, y_test)
+
+    elif args.task == 'transfer':
+        from stance.data_utils.loaders import StanceDataLoader
+
+        # load the stance.csv dataset....
+        data_loader = StanceDataLoader(args.test_file)
+        x = encode_or_load_stance(args, data_loader)
+
+        # load the model & eval
+        clf = load_model(args)
+        y = clf.predict(x)
+
+        # print some result for visual inspection
+        texts = data_loader.get('text')
+        issues = data_loader.get('controversial trending issue')
+        for t, issue, pred in zip(texts, issues, y):
+            pred_lbl = ['AGAINST', 'FAVOR', 'NONE'][pred]
+            print("{} | {} --> {}".format(t, issue, pred_lbl))
+            input("....")
+
+    else:
+        logger.error("Task: {} is not a valid task. "
+                     "Valid tasks are: {train,eval}".format(args.task))
