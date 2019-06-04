@@ -25,31 +25,39 @@ results. Nevertheless we can see competitives results.
 ```bash
 # tree -L 3 -I "*.pyc|*cache*|*init*"
 .
-├── Factmata ML Test.pdf
-└── stance_detection
-    ├── data
-    │   ├── SemEval2016-Task6-subtaskA-testdata-gold.txt
-    │   ├── SemEval2016-Task6-subtaskA-traindata-gold.csv
-    │   └── stance.csv
-    ├── external        # external libraries, models, ...
-    │   ├── encoders
-    │   ├── models
-    │   ├── pyBPE
-    │   └── workdir
-    ├── README.md
-    ├── requirements.txt    # python requirements
-    ├── scripts
-    │   ├── explore_dataset.ipynb
-    │   └── stance-detection-data-processing.html
-    ├── setup.cfg
-    ├── stance              # Stance Prediction package
-    │   ├── data_utils
-    │   ├── encoders.py
-    │   ├── laser_classifier.py
-    │   └── training
-    └── tests
-
-
+├── data
+├── external
+│   ├── encoders        # LASER encoding code
+│   │   └── laser.py
+│   ├── models          # pre-trained LASER encoder model
+│   │   └── LASER
+│   └── pyBPE           # BPE - Semantic Hash (or Subword Units) lib
+├── README.md
+├── requirements.txt
+├── scripts
+│   ├── download_models.sh
+│   ├── eval.pl
+│   ├── explore_dataset.ipynb
+│   └── stance-detection-data-processing.html
+├── setup.cfg
+├── stance              # Stance package and relevant code
+│   ├── data_utils
+│   │   ├── loaders.py
+│   │   ├── stance_batcher.py
+│   │   └── text_processing.py
+│   ├── encoders.py
+│   └── laser_classifier.py     # main entry-point
+├── tests
+└── workdir             # directory with checkpoints and other artifacts
+    ├── laser_mlp.pkl
+    ├── predictions.csv
+    ├── stance_laser-text+onehot-target.npy
+    ├── test_laser-tweet+onehot-target.npy
+    ├── test_laser-tweets.npy
+    ├── test_laser-tweet+target.npy
+    ├── training_laser-tweet+onehot-target.npy
+    ├── training_laser-tweets.npy
+    └── training_laser-tweet+target.npy
 ```
 
 
@@ -58,11 +66,13 @@ results. Nevertheless we can see competitives results.
 ### Prepare:
 
 1. `./scripts/download_models.sh`
+2. `pip install -r requirements`
 
 
 ### Training:
 
-1. Traing a classifier [LASER](https://github.com/facebookresearch/LASER)-encoding
+1. This trains a classifier of choice
+while [LASER](https://github.com/facebookresearch/LASER)-encoding
 the tweets and OneHot encoding the Stance:
 ```bash
     python -m stance.laser_classifier  train \
@@ -71,7 +81,7 @@ the tweets and OneHot encoding the Stance:
         --debug
 ```
 
-This should output something similar to:
+After a while you should see an output similar to:
 ```bash
     Timeit - 'encode_or_load_data' took 0.3740 seconds
     DEBUG - laser_classifier.py - 142: x-train: (2914, 1029) | y-train: (2914,)
@@ -93,7 +103,8 @@ This should output something similar to:
 ```
 
 Once the encoding and training finishes produces a `predictions.csv` file
-than can be passed onto a `perl` script provided by
+than can be passed onto a `perl` script provided by the
+[SemEval site](http://alt.qcri.org/semeval2016/task6/index.php?id=data-and-tools)
 ```bash
     perl ./scripts/eval.pl \
         ./data/SemEval2016-Task6-subtaskA-testdata-gold.txt \
