@@ -66,7 +66,8 @@ results. Nevertheless we can see competitives results.
 ### Prepare:
 
 1. `./scripts/download_models.sh`
-2. `pip install -r requirements`
+2. follow `./external/pyBPE` install instructions
+3. `pip install -r requirements`
 
 
 ### Training:
