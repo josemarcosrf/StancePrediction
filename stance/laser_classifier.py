@@ -1,37 +1,15 @@
 import logging
 import coloredlogs
 
-from stance.data_utils.loaders import SemEvalDataLoader
+from stance.utils.loaders import SemEvalDataLoader
 from stance import (build_arg_parser,
                     encode_or_load_data,
                     make_classifier_and_predict,
-                    encode_or_load_stance,
                     load_model, eval_model,
-                    timeit)
+                    test_on_different_domain)
 
 
 logger = logging.getLogger(__name__)
-
-
-@timeit
-def test_on_different_domain(args):
-    from stance.data_utils.loaders import StanceDataLoader
-
-    # load the stance.csv dataset....
-    data_loader = StanceDataLoader(args.test_file)
-    x = encode_or_load_stance(args, data_loader)
-
-    # load the model & eval
-    clf = load_model(args)
-    y = clf.predict(x)
-
-    # print some result for visual inspection
-    texts = data_loader.get('text')
-    issues = data_loader.get('controversial trending issue')
-    for t, issue, pred in zip(texts, issues, y):
-        pred_lbl = ['AGAINST', 'FAVOR', 'NONE'][pred]
-        print("{} | {} --> {}".format(t, issue, pred_lbl))
-        input("....")
 
 
 def get_args():

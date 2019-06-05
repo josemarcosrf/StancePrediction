@@ -78,6 +78,9 @@ the tweets and OneHot encoding the Stance:
     python -m stance.laser_classifier  train \
         --train-file data/SemEval2016-Task6-subtaskA-traindata-gold.csv \
         --test-file data/SemEval2016-Task6-subtaskA-testdata-gold.txt \
+        --predictions-file ./results/semeval_predictions_mlp.csv \
+        --clf-save-name laser \
+        --clf-type mlp \
         --debug
 ```
 
@@ -102,16 +105,16 @@ After a while you should see an output similar to:
     Timeit - 'make_classifier_and_predict' took 23.9830 seconds
 ```
 
-Once the encoding and training finishes produces a `predictions.csv` file
+Once the encoding and training finishes produces a `csv` file
 than can be passed onto a `perl` script provided by the
 [SemEval site](http://alt.qcri.org/semeval2016/task6/index.php?id=data-and-tools)
 ```bash
     perl ./scripts/eval.pl \
         ./data/SemEval2016-Task6-subtaskA-testdata-gold.txt \
-        ./workdir/predictions.csv
+        ./results/semeval_predictions_mlp.csv
 ```
 
-Which shoudl output a similar summary as at training time but only for
+Which should output a similar summary as at training time but only for
 stances `FAVOR` and `AGAINST`:
 
 ```bash
@@ -124,18 +127,41 @@ AGAINST   precision: 0.7206 recall: 0.7790 f-score: 0.7487
 Macro F: 0.6361
 ```
 
+For a RandomForest classifier:
+```bash
+    perl ./scripts/eval.pl \
+        ./data/SemEval2016-Task6-subtaskA-testdata-gold.txt \
+        ./results/semeval_predictions_randomforest.csv
+
+============
+Results
+============
+FAVOR     precision: 0.8345 recall: 0.3816 f-score: 0.5237
+AGAINST   precision: 0.6718 recall: 0.9678 f-score: 0.7931
+------------
+Macro F: 0.6584
+```
+
+In addition, all encoded inputs and models will be saved in the specified
+`workdir`.
+By default an `mlp` classifier will be saved at: `./workdir/laser_mlp.pkl`.
+Similarly a `random forest` classifier: `./workdir/laser_randomforest.pkl`.
+
 ### Eval:
 ```bash
     python -m stance.laser_classifier  eval \
         --train-file data/SemEval2016-Task6-subtaskA-traindata-gold.csv \
         --test-file data/SemEval2016-Task6-subtaskA-testdata-gold.txt \
+        --clf-save-name laser \
+        --clf-type mlp \
         --debug
 ```
 
 ### Evaluation on a different domain:
 ```bash
-    python -m stance.laser_classifier  transfer \
+    python -m stance.laser_classifier transfer \
         --test-file data/stance.csv \
+        --predictions-file ./workdir/stance_predictions.csv
         --debug
 ```
 

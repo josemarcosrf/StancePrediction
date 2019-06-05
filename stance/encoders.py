@@ -4,7 +4,7 @@ import coloredlogs
 import regex as re
 import numpy as np
 
-from stance.data_utils.text_processing import tokenize
+from stance.utils.text_processing import tokenize
 # TODO: FIX the pyBPE path mess!
 from external.pyBPE.pybpe.pybpe import pyBPE as bpe
 

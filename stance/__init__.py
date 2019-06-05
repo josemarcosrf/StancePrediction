@@ -1,9 +1,10 @@
 import os
-import time
 import logging
 import argparse
 import numpy as np
 
+from stance.utils import timeit
+from stance.utils.plotting import plot_training
 from stance.encoders import (LaserEncoder,
                              OneHotLabelEncoder,
                              IndexEncoder)
@@ -13,16 +14,6 @@ logger = logging.getLogger(__name__)
 STANCES = ['AGAINST', 'FAVOR', 'NONE']
 TARGETS = ['Atheism', 'Climate Change is a Real Concern', 'Feminist Movement',
            'Hillary Clinton', 'Legalization of Abortion']
-
-
-def timeit(method):
-    def timed(*args, **kw):
-        ts = time.time()
-        result = method(*args, **kw)
-        te = time.time()
-        print("Timeit - '{}' took {:.4f} seconds".format(method.__name__, te - ts))
-        return result
-    return timed
 
 
 def build_arg_parser():
@@ -38,8 +29,12 @@ def build_arg_parser():
                              help='CSV training input file')
     input_group.add_argument('--test-file', required=False,
                              help='CSV test input file')
+    input_group.add_argument('--predictions-file', default="semeval_preds.csv",
+                             help='predictions output CSV file')
     input_group.add_argument('--workdir', default="./workdir",
                              help='temporary work directory')
+
+
 
     # verbosity options
     verbosity_group = parser.add_argument_group('Verbosity Options')
@@ -97,6 +92,9 @@ def make_classifier_and_predict(args, train_set, test_set,
                             activation='relu',
                             early_stopping=True,
                             random_state=random_seed)
+
+    # Plot training curves vs data usage
+    plot_training(clf, x_train, y_train)
 
     # Train the classifier & save
     clf.fit(x_train, y_train)
@@ -227,7 +225,7 @@ def encode_or_load_data(args, data_loader):
 
 
 def save_predictions(args, y_pred):
-    from stance.data_utils.loaders import load_from_txt
+    from stance.utils.loaders import load_from_txt
     import copy
 
     gold = load_from_txt(args.test_file)[['Target', 'Tweet', 'Stance']]
@@ -237,8 +235,9 @@ def save_predictions(args, y_pred):
         y_lbl = STANCES[y]
         pred.iloc[i]['Stance'] = y_lbl
 
-    pred.to_csv(os.path.join(args.workdir, "predictions.csv"),
+    pred.to_csv(args.predictions_file,
                 sep='\t', index=True, index_label='ID')
+
 
 @timeit
 def eval_model(args, clf, x_test, y_test, target_names):
@@ -258,6 +257,20 @@ def eval_model(args, clf, x_test, y_test, target_names):
 
 @timeit
 def encode_or_load_stance(args, data_loader):
+    """Encodes or laods the already encoded stance dataset inputs.
+
+    Args:
+        args (argaprser.parsed_args): command-line arguments
+        data_loader (stance.utils.laoders.StanceDataLoader): [description]
+
+    Returns:
+        np.array: representing encoded inputs to the model (N x 1029)
+    """
+    from stance.utils.text_processing import (remove_non_printable,
+                                                   normalize_punct)
+
+    def preproc_text(t):
+        return remove_non_printable(normalize_punct(t.replace("\n", "  ")))
 
     encoded_stance_input_file = "./workdir/stance_laser-text+onehot-target.npy"
 
@@ -265,7 +278,7 @@ def encode_or_load_stance(args, data_loader):
         try:
             encoded_inputs = encode_tweets_and_targets(
                 args,
-                [t.replace("\n", "  ") for t in data_loader.get('text')],
+                [preproc_text(t) for t in data_loader.get('text')],
                 data_loader.get('controversial trending issue')
             )
             np.save(encoded_stance_input_file, encoded_inputs)
@@ -276,3 +289,37 @@ def encode_or_load_stance(args, data_loader):
         encoded_inputs = np.load(encoded_stance_input_file)
 
     return encoded_inputs
+
+
+@timeit
+def test_on_different_domain(args):
+    """Runs prediction on the stance.csv dataset and write a CSV file
+    containing the model predictions.
+
+    Args:
+        args (argaprser.parsed_args): command-line arguments
+    """
+    from stance.utils.loaders import (load_from_csv,
+                                           StanceDataLoader)
+
+    # Load and make a copy of the original dataset
+    keep_keys = ['text', 'controversial trending issue']
+    df = load_from_csv(args.test_file)[keep_keys]
+
+    # load the stance.csv dataset and encode it
+    data_loader = StanceDataLoader(args.test_file)
+    x = encode_or_load_stance(args, data_loader)
+
+    # load the model & eval
+    clf = load_model(args)
+    y = clf.predict(x)
+
+    # write to CSV file for visual inspection
+    texts = data_loader.get('text')
+    issues = data_loader.get('controversial trending issue')
+    for t, issue, pred in zip(texts, issues, y):
+        pred_lbl = STANCES[pred]
+        df['Stance'] = pred_lbl
+
+    df.to_csv(args.predictions_file,
+              sep='\t', index=True, index_label='ID')
