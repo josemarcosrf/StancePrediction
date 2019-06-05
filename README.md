@@ -41,7 +41,7 @@ results. Nevertheless we can see competitives results.
 │   └── stance-detection-data-processing.html
 ├── setup.cfg
 ├── stance              # Stance package and relevant code
-│   ├── data_utils
+│   ├── utils
 │   │   ├── loaders.py
 │   │   ├── stance_batcher.py
 │   │   └── text_processing.py
@@ -161,18 +161,6 @@ Similarly a `random forest` classifier: `./workdir/laser_randomforest.pkl`.
 ```bash
     python -m stance.laser_classifier transfer \
         --test-file data/stance.csv \
-        --predictions-file ./workdir/stance_predictions.csv
+        --predictions-file ./results/stance_predictions.csv
         --debug
 ```
-
-
-## Notes:
-
-* Dataset imbalance
-* Control random seed
-* Colab notebook
-* Unit tests
-* Typing
-* Save models
-* TF logs
-* LaTex Doc

@@ -94,7 +94,7 @@ def make_classifier_and_predict(args, train_set, test_set,
                             random_state=random_seed)
 
     # Plot training curves vs data usage
-    plot_training(clf, x_train, y_train)
+    # plot_training(clf, x_train, y_train)
 
     # Train the classifier & save
     clf.fit(x_train, y_train)
@@ -176,10 +176,13 @@ def encode_or_load_data(args, data_loader):
         [type]: [description]
     """
     # ** Inputs **
-    encoded_train_inputs_path = os.path.join(
-        args.workdir, "training_laser-tweet+onehot-target.npy")
-    encoded_test_inputs_path = os.path.join(
-        args.workdir, "test_laser-tweet+onehot-target.npy")
+    tinp_file = "{}_laser-tweet+onehot-target.npy" \
+        if args.target_encoding == 'onehot' else "{}_laser-tweet+target.npy"
+
+    encoded_train_inputs_path = os.path.join(args.workdir,
+                                             tinp_file.format('training'))
+    encoded_test_inputs_path = os.path.join(args.workdir,
+                                            tinp_file.format('test'))
 
     if not os.path.exists(encoded_train_inputs_path) or \
             not os.path.exists(encoded_test_inputs_path):

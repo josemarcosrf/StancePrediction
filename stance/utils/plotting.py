@@ -92,7 +92,7 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
 
 def plot_training(clf, x, y):
 
-    title = "LASER+MLP Learning curves for SemEval2016"
+    title = "LASER Learning curves for SemEval2016"
     plt = plot_learning_curve(clf, title, x, y,
                               ylim=(0.4, 1.01), cv=None, n_jobs=6)
     plt.show()

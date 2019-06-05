@@ -29,6 +29,8 @@ def get_args():
                                default=("./external/models/LASER/"
                                         "93langs.fvocab"),
                                help='Apply BPE using specified vocab')
+    encoder_group.add_argument('--target-encoding', default='onehot',
+                               help="How to encode the target {onehot|laser}")
     encoder_group.add_argument('--buffer-size', type=int, default=100,
                                help='Buffer size (sentences)')
     encoder_group.add_argument('--max-tokens', type=int, default=12000,
