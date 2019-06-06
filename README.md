@@ -1,7 +1,7 @@
 # Stance Detection
 
 For a small intro about the project please see the following
-[https://www.overleaf.com/read/vdvcwbnqgkdr](report).
+[report](https://www.overleaf.com/read/vdvcwbnqgkdr).
 
 
 ## Dataset
