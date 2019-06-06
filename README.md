@@ -1,5 +1,8 @@
 # Stance Detection
 
+For a small intro about the project please see the following
+[https://www.overleaf.com/read/vdvcwbnqgkdr](report).
+
 
 ## Dataset
 
@@ -65,10 +68,14 @@ results. Nevertheless we can see competitives results.
 
 ### Prepare:
 
+You'll need a python3 environment and ideally a CUDA capable machine.
+See `requirements.txt` for more details.
+
+The following steps should get everythign ready:
+
 1. `./scripts/download_models.sh`
 2. follow `./external/pyBPE` install instructions
 3. `pip install -r requirements`
-
 
 ### Training:
 
@@ -164,4 +171,9 @@ Similarly a `random forest` classifier: `./workdir/laser_randomforest.pkl`.
         --test-file data/stance.csv \
         --predictions-file ./results/stance_predictions.csv
         --debug
+```
+
+To see an entire list of options:
+```bash
+    python -m stance.laser_classifier -h
 ```
