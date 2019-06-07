@@ -6,7 +6,7 @@ import numpy as np
 
 from stance.utils.text_processing import tokenize
 # TODO: FIX the pyBPE path mess!
-from external.pyBPE.pybpe.pybpe import pyBPE as bpe
+from external.pyBPE.pybpe.pybpe import pyBPE
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +85,10 @@ class LaserEncoder():
         self.bpe_codes_file = args.bpe_codes
         self.vocab_file = args.vocab_file
 
+        # BPE encoding
+        self.bpe = pyBPE(self.vocab_file, self.bpe_codes_file)
+        self.bpe.load()
+
         # load the LASER sentence encoder
         self.encoder = EncodeLoad(args)
 
@@ -116,7 +120,5 @@ class LaserEncoder():
         tokenized = tokenize(input_text, lang=self.lang,
                              descape=False, lower_case=False)
         # BPE encode
-        encoded = bpe.apply_bpe(tokenized,
-                                self.bpe_codes_file,
-                                self.vocab_file)
+        encoded = self.bpe.apply_bpe(tokenized)
         return encoded
