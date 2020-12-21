@@ -1,4 +1,6 @@
 # Stance Detection
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fjmrf%2FStancePrediction.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fjmrf%2FStancePrediction?ref=badge_shield)
+
 
 For a small intro about the project please see the following
 [report](https://www.overleaf.com/read/vdvcwbnqgkdr).
@@ -177,3 +179,7 @@ To see an entire list of options:
 ```bash
     python -m stance.laser_classifier -h
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fjmrf%2FStancePrediction.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fjmrf%2FStancePrediction?ref=badge_large)
